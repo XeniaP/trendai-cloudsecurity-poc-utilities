@@ -22,6 +22,7 @@ set -euo pipefail
 # ===== Config =====
 PREFIX_1="v1"
 PREFIX_2="trendmicro"
+PREFIX_3="real-time-posture-monitoring"
 
 DRY_RUN="${DRY_RUN:-0}"                 # 1 = only print actions, 0 = execute
 ALL_SUBSCRIPTIONS="${ALL_SUBSCRIPTIONS:-1}"  # 1 = iterate all accessible subscriptions
@@ -65,7 +66,7 @@ require_az_login
 
 log "=== Starting Azure cleanup ==="
 log "DRY_RUN=$DRY_RUN | ALL_SUBSCRIPTIONS=$ALL_SUBSCRIPTIONS | SUBSCRIPTION_ID=${SUBSCRIPTION_ID:-<not set>}"
-log "Prefixes: '$PREFIX_1*' and '$PREFIX_2*'"
+log "Prefixes: '$PREFIX_1*' and '$PREFIX_2*' and '$PREFIX_3*'"
 log "Log file: $LOG_FILE"
 
 # ===== Subscription selection =====
@@ -88,28 +89,28 @@ log "Subscriptions to process: ${#subs[@]}"
 # ===== Functions =====
 
 list_matching_app_ids() {
-  az ad app list --query "[?starts_with(displayName,'$PREFIX_1') || starts_with(displayName,'$PREFIX_2')].appId" -o tsv
+  az ad app list --query "[?starts_with(displayName,'$PREFIX_1') || starts_with(displayName,'$PREFIX_2') || starts_with(displayName,'$PREFIX_3')].appId" -o tsv
 }
 
 list_matching_sp_ids() {
-  az ad sp list --query "[?starts_with(displayName,'$PREFIX_1') || starts_with(displayName,'$PREFIX_2')].id" -o tsv
+  az ad sp list --query "[?starts_with(displayName,'$PREFIX_1') || starts_with(displayName,'$PREFIX_2') || starts_with(displayName,'$PREFIX_3')].id" -o tsv
 }
 
 list_matching_custom_role_ids() {
   az role definition list --custom-role-only true \
-    --query "[?starts_with(roleName,'$PREFIX_1') || starts_with(roleName,'$PREFIX_2')].name" -o tsv
+    --query "[?starts_with(roleName,'$PREFIX_1') || starts_with(roleName,'$PREFIX_2') || starts_with(displayName,'$PREFIX_3')].name" -o tsv
 }
 
 list_matching_resource_groups() {
   az group list \
-    --query "[?starts_with(name,'$PREFIX_1') || starts_with(name,'$PREFIX_2')].name" -o tsv
+    --query "[?starts_with(name,'$PREFIX_1') || starts_with(name,'$PREFIX_2') || starts_with(displayName,'$PREFIX_3')].name" -o tsv
 }
 
 delete_role_assignments_for_roles() {
   # Delete role assignments whose roleDefinitionName matches our prefixes
   local ids
   ids="$(az role assignment list \
-    --query "[?starts_with(roleDefinitionName,'$PREFIX_1') || starts_with(roleDefinitionName,'$PREFIX_2')].id" -o tsv || true)"
+    --query "[?starts_with(roleDefinitionName,'$PREFIX_1') || starts_with(roleDefinitionName,'$PREFIX_2') || starts_with(displayName,'$PREFIX_3')].id" -o tsv || true)"
 
   if [[ -z "${ids// }" ]]; then
     log "No matching role assignments by roleDefinitionName found."
