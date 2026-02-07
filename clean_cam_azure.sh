@@ -97,20 +97,17 @@ list_matching_sp_ids() {
 }
 
 list_matching_custom_role_ids() {
-  az role definition list --custom-role-only true \
-    --query "[?starts_with(roleName,'$PREFIX_1') || starts_with(roleName,'$PREFIX_2') || starts_with(displayName,'$PREFIX_3')].name" -o tsv
+  az role definition list --custom-role-only true --query "[?starts_with(roleName,'$PREFIX_1') || starts_with(roleName,'$PREFIX_2') || starts_with(displayName,'$PREFIX_3')].name" -o tsv
 }
 
 list_matching_resource_groups() {
-  az group list \
-    --query "[?starts_with(name,'$PREFIX_1') || starts_with(name,'$PREFIX_2') || starts_with(displayName,'$PREFIX_3')].name" -o tsv
+  az group list --query "[?starts_with(name,'$PREFIX_1') || starts_with(name,'$PREFIX_2') || starts_with(displayName,'$PREFIX_3')].name" -o tsv
 }
 
 delete_role_assignments_for_roles() {
   # Delete role assignments whose roleDefinitionName matches our prefixes
   local ids
-  ids="$(az role assignment list \
-    --query "[?starts_with(roleDefinitionName,'$PREFIX_1') || starts_with(roleDefinitionName,'$PREFIX_2') || starts_with(displayName,'$PREFIX_3')].id" -o tsv || true)"
+  ids="$(az role assignment list --query "[?starts_with(roleDefinitionName,'$PREFIX_1') || starts_with(roleDefinitionName,'$PREFIX_2') || starts_with(displayName,'$PREFIX_3')].id" -o tsv || true)"
 
   if [[ -z "${ids// }" ]]; then
     log "No matching role assignments by roleDefinitionName found."
