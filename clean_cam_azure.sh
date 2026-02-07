@@ -23,8 +23,8 @@ set -euo pipefail
 PREFIX_1="v1"
 PREFIX_2="trendmicro"
 
-DRY_RUN="${DRY_RUN:-1}"                 # 1 = only print actions, 0 = execute
-ALL_SUBSCRIPTIONS="${ALL_SUBSCRIPTIONS:-0}"  # 1 = iterate all accessible subscriptions
+DRY_RUN="${DRY_RUN:-0}"                 # 1 = only print actions, 0 = execute
+ALL_SUBSCRIPTIONS="${ALL_SUBSCRIPTIONS:-1}"  # 1 = iterate all accessible subscriptions
 SUBSCRIPTION_ID="${SUBSCRIPTION_ID:-}"       # optional: run only in this subscription
 DELETE_RESOURCE_GROUPS="${DELETE_RESOURCE_GROUPS:-1}" # 1 = delete RGs, 0 = skip
 NO_WAIT_RG_DELETE="${NO_WAIT_RG_DELETE:-1}"  # 1 = --no-wait, 0 = wait
