@@ -97,17 +97,17 @@ list_matching_sp_ids() {
 }
 
 list_matching_custom_role_ids() {
-  az role definition list --custom-role-only true --query "[?starts_with(roleName,'$PREFIX_1') || starts_with(roleName,'$PREFIX_2') || starts_with(displayName,'$PREFIX_3')].name" -o tsv
+  az role definition list --custom-role-only true --query "[?starts_with(roleName,'$PREFIX_1') || starts_with(roleName,'$PREFIX_2') || starts_with(roleName,'$PREFIX_3')].name" -o tsv
 }
 
 list_matching_resource_groups() {
-  az group list --query "[?starts_with(name,'$PREFIX_1') || starts_with(name,'$PREFIX_2') || starts_with(displayName,'$PREFIX_3')].name" -o tsv
+  az group list --query "[?starts_with(name,'$PREFIX_1') || starts_with(name,'$PREFIX_2') || starts_with(name,'$PREFIX_3')].name" -o tsv
 }
 
 delete_role_assignments_for_roles() {
   # Delete role assignments whose roleDefinitionName matches our prefixes
   local ids
-  ids="$(az role assignment list --query "[?starts_with(roleDefinitionName,'$PREFIX_1') || starts_with(roleDefinitionName,'$PREFIX_2') || starts_with(displayName,'$PREFIX_3')].id" -o tsv || true)"
+  ids="$(az role assignment list --query "[?starts_with(roleDefinitionName,'$PREFIX_1') || starts_with(roleDefinitionName,'$PREFIX_2') || starts_with(roleDefinitionName,'$PREFIX_3')].id" -o tsv || true)"
 
   if [[ -z "${ids// }" ]]; then
     log "No matching role assignments by roleDefinitionName found."
@@ -229,17 +229,17 @@ for sub in "${subs[@]}"; do
 
   # 2) Delete role assignments first
   delete_role_assignments_for_roles
-  delete_role_assignments_for_principals "$matching_sp_ids"
+  #delete_role_assignments_for_principals "$matching_sp_ids"
 
   # 3) Delete custom roles
   delete_custom_roles "$matching_role_ids"
 
-  # 4) Delete apps and SPs
-  delete_app_registrations "$matching_app_ids"
-  delete_service_principals "$matching_sp_ids"
-
-  # 5) Delete resource groups last
+  # 4) Delete resource groups last
   delete_resource_groups "$matching_rgs"
+
+  # 5) Delete apps and SPs
+  #delete_app_registrations "$matching_app_ids"
+  #delete_service_principals "$matching_sp_ids"
 
   log "Done subscription: $sub"
 done
