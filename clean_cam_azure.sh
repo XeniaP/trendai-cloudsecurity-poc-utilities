@@ -109,6 +109,8 @@ delete_role_assignments_for_roles() {
   local ids
   ids="$(az role assignment list --query "[?starts_with(roleDefinitionName,'$PREFIX_1') || starts_with(roleDefinitionName,'$PREFIX_2') || starts_with(roleDefinitionName,'$PREFIX_3')].id" -o tsv || true)"
 
+  echo "Matching role assignment IDs to delete (by roleDefinitionName): $ids"
+
   if [[ -z "${ids// }" ]]; then
     log "No matching role assignments by roleDefinitionName found."
     return 0
