@@ -255,7 +255,7 @@ for sub in "${subs[@]}"; do
   delete_keyvaults_in_resource_group 
 
   # 5) Delete apps and SPs
-  #delete_app_registrations "$matching_app_ids"
+  delete_app_registrations "$matching_app_ids"
   #delete_service_principals "$matching_sp_ids"
 
   log "Done subscription: $sub"
