@@ -190,20 +190,16 @@ delete_service_principals() {
 }
 
 delete_keyvaults_in_resource_group() {
-  local rg_name="$1"
-  echo "Identificando Key Vaults en $rg_name..."
-  KVS_IN_RG=$(az keyvault list --resource-group "$rg_name" --query "[].name" -o tsv)
-  echo "Key Vaults found in $rg_name: $KVS_IN_RG"
-  DELETED_KVS_TO_PURGE=$(az keyvault list-deleted --query "[?contains(resourceId, '/resourceGroups/$rg_name')].name" -o tsv)
-  if [ -n "$DELETED_KVS_TO_PURGE" ]; then
-      for KV in $DELETED_KVS_TO_PURGE; do
-          echo "Purgando permanentemente la Key Vault: $KV"
+  PREFIJOS=("dspm" "trendmicro" "v1" "amle")
+
+  for PREFIJO in "${PREFIJOS[@]}"; do
+      DELETED_MATCHES=$(az keyvault list-deleted --query "[?starts_with(name, '$PREFIJO')].name" -o tsv)
+
+      for KV in $DELETED_MATCHES; do
+          echo "Purgando match encontrado: $KV"
           az keyvault purge --name "$KV" --no-wait
       done
-      echo "Purga iniciada."
-  else
-      echo "No se encontraron Key Vaults huérfanas para este grupo."
-  fi
+  done
 }
 
 delete_resource_groups() {
@@ -223,10 +219,8 @@ delete_resource_groups() {
     [[ -z "$rg" ]] && continue
     if [[ "$NO_WAIT_RG_DELETE" == "1" ]]; then
       run "az group delete --name \"$rg\" --yes"
-      delete_keyvaults_in_resource_group "$rg"
     else
       run "az group delete --name \"$rg\" --yes"
-      delete_keyvaults_in_resource_group "$rg"
     fi
   done <<< "$rgs"
 }
@@ -257,6 +251,8 @@ for sub in "${subs[@]}"; do
 
   # 4) Delete resource groups last
   delete_resource_groups "$matching_rgs"
+
+  delete_keyvaults_in_resource_group 
 
   # 5) Delete apps and SPs
   #delete_app_registrations "$matching_app_ids"
