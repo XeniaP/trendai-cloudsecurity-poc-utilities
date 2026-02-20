@@ -192,6 +192,7 @@ delete_service_principals() {
 delete_keyvaults_in_resource_group() {
   local rg_name="$1"
   KVS_IN_RG=$(az keyvault list --resource-group "$rg_name" --query "[].name" -o tsv)
+  echo "Key Vaults found in $rg_name: $KVS_IN_RG"
   DELETED_KVS_TO_PURGE=$(az keyvault list-deleted --query "[?contains(resourceId, '/resourceGroups/$rg_name')].name" -o tsv)
   if [ -n "$DELETED_KVS_TO_PURGE" ]; then
       for KV in $DELETED_KVS_TO_PURGE; do
