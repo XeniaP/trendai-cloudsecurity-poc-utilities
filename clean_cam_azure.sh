@@ -187,6 +187,21 @@ delete_service_principals() {
   done <<< "$sp_ids"
 }
 
+delete_keyvaults_in_resource_group() {
+  local rg_name="$1"
+  KVS_IN_RG=$(az keyvault list --resource-group "$rg_name" --query "[].name" -o tsv)
+  DELETED_KVS_TO_PURGE=$(az keyvault list-deleted --query "[?contains(resourceId, '/resourceGroups/$rg_name')].name" -o tsv)
+  if [ -n "$DELETED_KVS_TO_PURGE" ]; then
+      for KV in $DELETED_KVS_TO_PURGE; do
+          echo "Purgando permanentemente la Key Vault: $KV"
+          az keyvault purge --name "$KV" --no-wait
+      done
+      echo "Purga iniciada."
+  else
+      echo "No se encontraron Key Vaults huérfanas para este grupo."
+  fi
+}
+
 delete_resource_groups() {
   if [[ "$DELETE_RESOURCE_GROUPS" != "1" ]]; then
     log "Skipping Resource Group deletion (DELETE_RESOURCE_GROUPS=0)."
@@ -204,8 +219,10 @@ delete_resource_groups() {
     [[ -z "$rg" ]] && continue
     if [[ "$NO_WAIT_RG_DELETE" == "1" ]]; then
       run "az group delete --name \"$rg\" --yes --no-wait"
+      delete_keyvaults_in_resource_group "$rg"
     else
       run "az group delete --name \"$rg\" --yes"
+      delete_keyvaults_in_resource_group "$rg"
     fi
   done <<< "$rgs"
 }
