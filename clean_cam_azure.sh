@@ -229,7 +229,7 @@ for sub in "${subs[@]}"; do
 
   # 2) Delete role assignments first
   delete_role_assignments_for_roles
-  #delete_role_assignments_for_principals "$matching_sp_ids"
+  delete_role_assignments_for_principals "$matching_sp_ids"
 
   # 3) Delete custom roles
   delete_custom_roles "$matching_role_ids"
