@@ -44,7 +44,7 @@ for PROJECT_ID in $PROJECTS; do
         echo "No se encontró el Tag $TAG_KEY_NAME en el proyecto $PROJECT_ID."
     fi
 
-    gcloud iam workload-identity-pools list --location="global" --filter="name:$PREFIX" --format="value(name)" | xargs -r -I {} gcloud iam workload-identity-pools delete {} --location="global" --quiet
+    gcloud iam workload-identity-pools list --location="global" --filter="name:v1-workload-identity" --format="value(name)" | xargs -r -I {} gcloud iam workload-identity-pools delete {} --location="global" --quiet
 
     # 9. NETWORKING (Firewalls, Subnets, VPC)
     #echo "   - Eliminando Networking (VPC e infraestructura)..."
