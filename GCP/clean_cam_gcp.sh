@@ -5,7 +5,7 @@ REGION="us-east4"
 
 PROJECTS=$(gcloud projects list --filter="lifecycleState=ACTIVE" --format="value(projectId)")
 
-echo "Se han detectado los siguientes proyectos para limpieza:"
+echo "The cleanup process start execution for next projects: "
 echo "$PROJECTS"
 echo "--------------------------------------------------------"
 
@@ -33,29 +33,19 @@ for PROJECT_ID in $PROJECTS; do
     TAG_KEY_ID=$(gcloud resource-manager tags keys list --parent="projects/$PROJECT_ID" --format="value(name)" --filter="shortName=$TAG_KEY_NAME")
 
     if [ ! -z "$TAG_KEY_ID" ]; then
-        echo "Eliminando Tag Key: $TAG_KEY_NAME ($TAG_KEY_ID)..."
         TAG_VALUES=$(gcloud resource-manager tags values list --parent=$TAG_KEY_ID --format="value(name)")
         for val in $TAG_VALUES; do
             gcloud resource-manager tags values delete $val --quiet
         done
         gcloud resource-manager tags keys delete $TAG_KEY_ID --quiet
-        echo "Tag eliminado correctamente."
+        echo "Tag deleted correctly."
     else
-        echo "No se encontró el Tag $TAG_KEY_NAME en el proyecto $PROJECT_ID."
+        echo "Don't existe el Tag $TAG_KEY_NAME in the project $PROJECT_ID."
     fi
 
     gcloud iam workload-identity-pools list --location="global" --filter="name:v1-workload-identity" --format="value(name)" | xargs -r -I {} gcloud iam workload-identity-pools delete {} --location="global" --quiet
 
-    # 9. NETWORKING (Firewalls, Subnets, VPC)
-    #echo "   - Eliminando Networking (VPC e infraestructura)..."
-    #gcloud compute firewall-rules list --filter="name:$PREFIX" --format="value(name)" | xargs -r -I {} gcloud compute firewall-rules delete {} --quiet
-    
-    # Intentar borrar subred específica y red específica
-    #gcloud compute networks subnets delete "${PREFIX}-vpc-subnet-$REGION" --region=$REGION --quiet 2>/dev/null
-    #gcloud compute networks delete "${PREFIX}-vpc-network" --quiet 2>/dev/null
-
-    echo ">> Finalizado limpieza en $PROJECT_ID"
-    echo "--------------------------------------------------------"
+    echo ">> Cleanup finish $PROJECT_ID"
 done
 
-echo "PROCESO GLOBAL FINALIZADO."
+echo "Finish."
