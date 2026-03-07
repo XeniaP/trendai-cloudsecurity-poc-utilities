@@ -218,7 +218,7 @@ delete_resource_groups() {
   while IFS= read -r rg; do
     [[ -z "$rg" ]] && continue
     if [[ "$NO_WAIT_RG_DELETE" == "1" ]]; then
-      run "az group delete --name \"$rg\" --yes"
+      run "az group delete --name \"$rg\" --yes --no-wait"
     else
       run "az group delete --name \"$rg\" --yes"
     fi
