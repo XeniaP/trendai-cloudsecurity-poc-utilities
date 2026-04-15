@@ -4,7 +4,7 @@ import os
 
 url = "https://api.xdr.trendmicro.com/beta/cam/azureSubscriptions/generateTerraformPackage"
 
-v1_api_key=os.getenv("API_KEY")
+v1_api_key=os.getenv("V1_API_KEY")
 subscription_id=os.getenv("SUBSCRIPTION_ID")
 subscription_name=os.getenv("SUBSCRIPTION_NAME")
 swp_instance_id=os.getenv("SWP_INSTANCE_ID")
