@@ -25,8 +25,6 @@ if main_region is None or main_region == "":
 
 
 def request_template_url():
-    print("Requesting template URL with the following parameters:")
-    print(f"Subscription Name: {subscription_name}")
     payload = json.dumps({
         "azureSubscriptionName": f"{subscription_name}",
         "azureSubscriptionDescription": "",
