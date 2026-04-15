@@ -53,15 +53,17 @@ def request_template_url():
         "isCAMCloudASRMEnabled": True
     }
     type(payload)
+    print(avtd_regions == "[]")
+    print(len(list(avtd_regions)))
 
-    if len(avtd_regions) > 0:
+    if avtd_regions != "[]":
         featureConfig = {
             "id": "cloud-sentry",
             "regions": avtd_regions.split(",")
         }
         payload["features"].append(featureConfig)
     
-    if len(dspm_regions) > 0:
+    if dspm_regions != "[]":
         featureConfig = {
             "id": "data-security-posture-management",
             "regions": dspm_regions.split(",")
