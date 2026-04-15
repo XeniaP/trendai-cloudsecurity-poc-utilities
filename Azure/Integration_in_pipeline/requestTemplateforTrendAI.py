@@ -61,6 +61,7 @@ def request_template_url():
     response = requests.request("POST", url, headers=headers, data=payload)
 
     response_json = response.json()
+    print(response_json)
     print(response_json['templateUrl'])
     return response_json['templateUrl']
 
