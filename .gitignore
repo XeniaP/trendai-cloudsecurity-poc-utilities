@@ -1,3 +1,13 @@
 *.log
 FileSecurity/Files/
 **/Files/
+Azure/Integration_in_pipeline/cloud-account-management-terraform-package.zip
+Azure/Integration_in_pipeline/cloud-account-management-terraform-package/cam/main.tf
+Azure/Integration_in_pipeline/cloud-account-management-terraform-package/cam/outputs.tf
+Azure/Integration_in_pipeline/cloud-account-management-terraform-package/cam/variables.tf
+Azure/Integration_in_pipeline/cloud-account-management-terraform-package/deploy.sh
+Azure/Integration_in_pipeline/cloud-account-management-terraform-package/functions.sh
+Azure/Integration_in_pipeline/cloud-account-management-terraform-package/main.tf
+Azure/Integration_in_pipeline/cloud-account-management-terraform-package/outputs.tf
+Azure/Integration_in_pipeline/cloud-account-management-terraform-package/variables.tf
+Azure/Integration_in_pipeline/cloud-account-management-terraform-package/cam/trendmicro_visiononecloudaccount.tf

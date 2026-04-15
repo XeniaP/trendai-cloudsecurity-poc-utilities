@@ -1,8 +1,15 @@
-import requests
-import json
 import os
+import sys
+import json
+import zipfile
+from io import BytesIO
+import requests
+
 
 url = "https://api.xdr.trendmicro.com/beta/cam/azureSubscriptions/generateTerraformPackage"
+
+OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "cloud-account-management-terraform-package")
+ZIP_NAME = os.environ.get("ZIP_NAME", "cloud-account-management-terraform-package.zip")
 
 v1_api_key=os.getenv("V1_API_KEY")
 subscription_id=os.getenv("SUB_ID")
@@ -81,4 +88,38 @@ def request_template_url():
     response_json = response.json()
     return response_json['templateUrl']
 
-print(f"##vso[task.setvariable variable=GENERATED_BACKEND_URL]{request_template_url()}")
+def download_file(url: str, destination: str) -> None:
+    with requests.get(url, stream=True, timeout=300) as response:
+        response.raise_for_status()
+        with open(destination, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+
+def unzip_file(zip_path: str, extract_to: str) -> None:
+    os.makedirs(extract_to, exist_ok=True)
+    with zipfile.ZipFile(zip_path, "r") as zip_ref:
+        zip_ref.extractall(extract_to)
+
+def main() -> int:
+    try:
+        print("Generating Terraform package URL...")
+        package_url = request_template_url()
+        print(f"Package URL obtained: {package_url}")
+
+        print(f"Downloading ZIP to: {ZIP_NAME}")
+        download_file(package_url, ZIP_NAME)
+
+        print(f"Extracting ZIP to: {OUTPUT_DIR}")
+        unzip_file(ZIP_NAME, OUTPUT_DIR)
+
+        print("Package downloaded and extracted successfully.")
+        return 0
+
+    except Exception as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
