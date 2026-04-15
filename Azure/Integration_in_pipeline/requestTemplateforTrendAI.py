@@ -81,4 +81,4 @@ def request_template_url():
     response_json = response.json()
     return response_json['templateUrl']
 
-os.environ["BACKEND_URL"] = request_template_url()
+print(f"##vso[task.setvariable variable=BACKEND_URL]{request_template_url()}")
