@@ -5,8 +5,8 @@ import os
 url = "https://api.xdr.trendmicro.com/beta/cam/azureSubscriptions/generateTerraformPackage"
 
 v1_api_key=os.getenv("V1_API_KEY")
-subscription_id=os.getenv("SUBSCRIPTION_ID")
-subscription_name=os.getenv("SUBSCRIPTION_NAME")
+subscription_id=os.getenv("SUB_ID")
+subscription_name=os.getenv("CLOUD_ACCOUNT_NAME")
 swp_instance_id=os.getenv("SWP_INSTANCE_ID")
 avtd_regions=os.getenv("AVTD_REGIONS")
 dspm_regions=os.getenv("DSPM_REGIONS")
@@ -63,8 +63,6 @@ def request_template_url():
     response = requests.request("POST", url, headers=headers, data=payload)
 
     response_json = response.json()
-    print(response_json)
-    print(response_json['templateUrl'])
     return response_json['templateUrl']
 
 request_template_url()
