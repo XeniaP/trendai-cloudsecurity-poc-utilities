@@ -25,6 +25,9 @@ if main_region is None or main_region == "":
 
 
 def request_template_url():
+    print("Requesting template URL with the following parameters:")
+    print(f"Subscription Name: {subscription_name}")
+    print(f"Subscription ID: {subscription_id}")
     payload = json.dumps({
         "azureSubscriptionName": f"{subscription_name}",
         "azureSubscriptionDescription": "",
@@ -39,28 +42,36 @@ def request_template_url():
         ],
         "features": [
             {
-            "id": "cloud-sentry",
-            "regions": avtd_regions.split(",")
-            },
-            {
             "id": "file-storage-security",
             "regions": [main_region]
             },
             {
             "id": "real-time-posture-monitoring"
-            },
-            {
-            "id": "data-security-posture-management",
-            "regions": dspm_regions.split(",")
             }
         ],
         "azureRegion": main_region,
         "isCAMCloudASRMEnabled": True
     })
 
+    if len(avtd_regions) > 0:
+        featureConfig = {
+            "id": "cloud-sentry",
+            "regions": avtd_regions.split(",")
+        }
+        payload["features"].append(featureConfig)
+    
+    if len(dspm_regions) > 0:
+        featureConfig = {
+            "id": "data-security-posture-management",
+            "regions": dspm_regions.split(",")
+        }
+        payload["features"].append(featureConfig)
+    
+    print("Payload to be sent in the request: ", payload)
+
     response = requests.request("POST", url, headers=headers, data=payload)
 
     response_json = response.json()
     return response_json['templateUrl']
 
-request_template_url()
+os.environ["BACKEND_URL"] = request_template_url()
