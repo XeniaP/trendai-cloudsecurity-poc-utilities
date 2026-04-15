@@ -28,7 +28,7 @@ def request_template_url():
     print("Requesting template URL with the following parameters:")
     print(f"Subscription Name: {subscription_name}")
     print(f"Subscription ID: {subscription_id}")
-    payload = json.dumps({
+    payload = {
         "azureSubscriptionName": f"{subscription_name}",
         "azureSubscriptionDescription": "",
         "subscriptionId": f"{subscription_id}",
@@ -51,7 +51,8 @@ def request_template_url():
         ],
         "azureRegion": main_region,
         "isCAMCloudASRMEnabled": True
-    })
+    }
+    type(payload)
 
     if len(avtd_regions) > 0:
         featureConfig = {
@@ -69,7 +70,7 @@ def request_template_url():
     
     print("Payload to be sent in the request: ", payload)
 
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
 
     response_json = response.json()
     return response_json['templateUrl']
