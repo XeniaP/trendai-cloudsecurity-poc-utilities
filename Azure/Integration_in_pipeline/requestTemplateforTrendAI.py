@@ -23,6 +23,10 @@ headers = {
 if main_region is None or main_region == "":
     main_region = "eastus"
 
+print("Main region is set to: ", main_region)
+print("AVTD regions: ", avtd_regions)
+print("DSPM regions: ", dspm_regions)
+
 
 def request_template_url():
     print("Requesting template URL with the following parameters:")
@@ -52,11 +56,9 @@ def request_template_url():
         "azureRegion": main_region,
         "isCAMCloudASRMEnabled": True
     }
-    type(payload)
-    print(avtd_regions == "[]")
-    print(len(list(avtd_regions)))
 
     if avtd_regions != "[]":
+        print("avtd")
         featureConfig = {
             "id": "cloud-sentry",
             "regions": avtd_regions.split(",")
@@ -64,6 +66,7 @@ def request_template_url():
         payload["features"].append(featureConfig)
     
     if dspm_regions != "[]":
+        print("dspm")
         featureConfig = {
             "id": "data-security-posture-management",
             "regions": dspm_regions.split(",")
@@ -73,6 +76,7 @@ def request_template_url():
     print("Payload to be sent in the request: ", payload)
 
     response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
+    print("Response status code: ", response.text)
 
     response_json = response.json()
     return response_json['templateUrl']
