@@ -17,6 +17,8 @@ subscription_name=os.getenv("CLOUD_ACCOUNT_NAME")
 swp_instance_id=os.getenv("SWP_INSTANCE_ID")
 avtd_regions=os.getenv("AVTD_REGIONS")
 dspm_regions=os.getenv("DSPM_REGIONS")
+rtm_enable=os.getenv("RTM_ENABLE")
+cloud_xdr_enable=os.getenv("CLOUD_XDR_ENABLE")
 main_region=os.getenv("MAIN_REGION")
 
 payload = {} # Initialize payload as an empty dictionary
@@ -55,9 +57,6 @@ def request_template_url():
             {
             "id": "file-storage-security",
             "regions": [main_region]
-            },
-            {
-            "id": "real-time-posture-monitoring"
             }
         ],
         "azureRegion": main_region,
@@ -79,6 +78,18 @@ def request_template_url():
             "regions": dspm_regions.split(",")
         }
         payload["features"].append(featureConfig)
+    if(rtm_enable == True):
+      print("rtm")
+      featureConfig = {
+        "id": "real-time-posture-monitoring"
+      }
+      payload["features"].append(featureConfig)
+    if(cloud_xdr_enable == True):
+      print("rtm")
+      featureConfig = {
+        "id": "azure-activity-log"
+      }
+      payload["features"].append(featureConfig)
     
     print("Payload to be sent in the request: ", payload)
 
