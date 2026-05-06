@@ -84,7 +84,7 @@ def request_template_url():
         "id": "real-time-posture-monitoring"
       }
       payload["features"].append(featureConfig)
-    if(fs_enable == "true"):
+    if(fs_enable == True):
       print("fs")
       featureConfig = {
             "id": "file-storage-security",
