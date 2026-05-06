@@ -38,6 +38,7 @@ print("Main region is set to: ", main_region)
 print("AVTD regions: ", avtd_regions)
 print("DSPM regions: ", dspm_regions)
 print("FS Enable: ", fs_enable)
+print("FS Enable: ", type(fs_enable))
 print("FS Region: ", fss_region)
 print("RTM Enable: ", rtm_enable)
 
