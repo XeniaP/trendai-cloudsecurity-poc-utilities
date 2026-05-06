@@ -17,10 +17,10 @@ subscription_name=os.getenv("CLOUD_ACCOUNT_NAME")
 swp_instance_id=os.getenv("SWP_INSTANCE_ID")
 avtd_regions=os.getenv("AVTD_REGIONS")
 dspm_regions=os.getenv("DSPM_REGIONS")
-rtm_enable=os.getenv("RTM_ENABLE")
-fs_enable=os.getenv("FS_ENABLE")
+rtm_enable=bool(os.getenv("RTM_ENABLE"))
+fs_enable=bool(os.getenv("FS_ENABLE"))
 fss_region=os.getenv("FSS_REGION")
-cloud_xdr_enable=os.getenv("CLOUD_XDR_ENABLE")
+cloud_xdr_enable=bool(os.getenv("CLOUD_XDR_ENABLE"))
 main_region=os.getenv("MAIN_REGION")
 
 payload = {} # Initialize payload as an empty dictionary
