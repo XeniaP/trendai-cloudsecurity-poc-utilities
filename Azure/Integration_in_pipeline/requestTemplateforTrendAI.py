@@ -18,6 +18,7 @@ swp_instance_id=os.getenv("SWP_INSTANCE_ID")
 avtd_regions=os.getenv("AVTD_REGIONS")
 dspm_regions=os.getenv("DSPM_REGIONS")
 rtm_enable=os.getenv("RTM_ENABLE")
+fs_enable=os.getenv("FS_ENABLE")
 cloud_xdr_enable=os.getenv("CLOUD_XDR_ENABLE")
 main_region=os.getenv("MAIN_REGION")
 
@@ -53,12 +54,7 @@ def request_template_url():
             ]
             }
         ],
-        "features": [
-            {
-            "id": "file-storage-security",
-            "regions": [main_region]
-            }
-        ],
+        "features": [{}],
         "azureRegion": main_region,
         "isCAMCloudASRMEnabled": True
     }
@@ -82,6 +78,13 @@ def request_template_url():
       print("rtm")
       featureConfig = {
         "id": "real-time-posture-monitoring"
+      }
+      payload["features"].append(featureConfig)
+    if(fs_enable == True):
+      print("fs")
+      featureConfig = {
+            "id": "file-storage-security",
+            "regions": [main_region]
       }
       payload["features"].append(featureConfig)
     if(cloud_xdr_enable == True):
