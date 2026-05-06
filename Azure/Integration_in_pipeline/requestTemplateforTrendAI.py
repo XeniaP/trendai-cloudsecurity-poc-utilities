@@ -54,7 +54,7 @@ def request_template_url():
             ]
             }
         ],
-        "features": [{}],
+        "features": [],
         "azureRegion": main_region,
         "isCAMCloudASRMEnabled": True
     }
