@@ -19,6 +19,7 @@ avtd_regions=os.getenv("AVTD_REGIONS")
 dspm_regions=os.getenv("DSPM_REGIONS")
 rtm_enable=os.getenv("RTM_ENABLE")
 fs_enable=os.getenv("FS_ENABLE")
+fss_region=os.getenv("FSS_REGION")
 cloud_xdr_enable=os.getenv("CLOUD_XDR_ENABLE")
 main_region=os.getenv("MAIN_REGION")
 
@@ -36,6 +37,9 @@ if main_region is None or main_region == "":
 print("Main region is set to: ", main_region)
 print("AVTD regions: ", avtd_regions)
 print("DSPM regions: ", dspm_regions)
+print("FS Enable: ", fs_enable)
+print("FS Region: ", fss_region)
+print("RTM Enable: ", rtm_enable)
 
 
 def request_template_url():
