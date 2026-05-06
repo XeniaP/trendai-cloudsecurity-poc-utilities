@@ -84,11 +84,11 @@ def request_template_url():
         "id": "real-time-posture-monitoring"
       }
       payload["features"].append(featureConfig)
-    if(fs_enable == True):
+    if(fs_enable == "true"):
       print("fs")
       featureConfig = {
             "id": "file-storage-security",
-            "regions": [main_region]
+            "regions": [fss_region]
       }
       payload["features"].append(featureConfig)
     if(cloud_xdr_enable == True):
