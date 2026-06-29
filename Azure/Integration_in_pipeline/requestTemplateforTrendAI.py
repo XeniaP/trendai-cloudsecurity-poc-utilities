@@ -20,7 +20,7 @@ rtm_enable        = bool(os.getenv("RTM_ENABLE"))
 fs_enable         = bool(os.getenv("FS_ENABLE"))
 fss_region        = os.getenv("FSS_REGION")
 cloud_xdr_enable  = bool(os.getenv("CLOUD_XDR_ENABLE"))
-main_region       = os.getenv("MAIN_REGION")
+main_region       = os.getenv("MAIN_REGION_RESOLVED")
 
 
 def parse_regions(regions_env: str) -> list:
