@@ -19,7 +19,7 @@ swp_instance_id   = os.getenv("SWP_INSTANCE_ID")
 rtm_enable        = bool(os.getenv("RTM_ENABLE"))
 fs_enable         = bool(os.getenv("FS_ENABLE"))
 fss_region        = os.getenv("FSS_REGION")
-cloud_xdr_enable  = bool(os.getenv("CLOUD_XDR_ENABLE"))
+cloud_xdr_enable  = bool("false")
 main_region       = os.getenv("MAIN_REGION_RESOLVED")
 
 
