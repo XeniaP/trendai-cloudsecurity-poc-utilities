@@ -115,10 +115,10 @@ def request_template_url():
             "regions": [fss_region]
         })
 
-    if cloud_xdr_enable:
-        payload["features"].append({
-            "id": "azure-activity-log"
-        })
+    #if cloud_xdr_enable:
+    #    payload["features"].append({
+    #        "id": "azure-activity-log"
+    #    })
 
     print("Payload to be sent in the request: ", json.dumps(payload, indent=2))
 
