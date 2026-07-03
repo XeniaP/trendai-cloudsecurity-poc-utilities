@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import re
+import re
 import zipfile
 from io import BytesIO
 import requests
@@ -16,9 +17,8 @@ v1_api_key        = os.getenv("V1_API_KEY")
 subscription_id   = os.getenv("SUB_ID")
 subscription_name = os.getenv("CLOUD_ACCOUNT_NAME")
 swp_instance_id   = os.getenv("SWP_INSTANCE_ID")
-rtm_enable        = bool(os.getenv("RTM_ENABLE"))
-fs_enable         = bool(os.getenv("FS_ENABLE"))
-fss_regions        = os.getenv("FSS_REGIONS")
+rtm_enable        = os.getenv("RTM_ENABLE", "").strip().lower() == "true"
+fs_enable         = os.getenv("FS_ENABLE", "").strip().lower() == "true"
 cloud_xdr_enable  = False
 main_region       = os.getenv("MAIN_REGION_RESOLVED")
 
@@ -52,6 +52,7 @@ def parse_regions(regions_env: str) -> list:
 # Parsear regiones al inicio, ya normalizadas
 avtd_regions = parse_regions(os.getenv("AVTD_REGIONS", ""))
 dspm_regions = parse_regions(os.getenv("DSPM_REGIONS", ""))
+fss_regions  = parse_regions(os.getenv("FSS_REGIONS", ""))
 
 headers = {
     'Content-Type': 'application/json',
@@ -109,10 +110,10 @@ def request_template_url():
             "id": "real-time-posture-monitoring"
         })
 
-    if fs_enable:
+    if fs_enable and fss_regions:
         payload["features"].append({
             "id": "file-storage-security",
-            "regions": [fss_regions]
+            "regions": fss_regions
         })
 
     #if cloud_xdr_enable:
