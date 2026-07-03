@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import re
 import zipfile
 from io import BytesIO
 import requests
@@ -11,51 +12,79 @@ url = "https://api.xdr.trendmicro.com/beta/cam/azureSubscriptions/generateTerraf
 OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "cloud-account-management-terraform-package")
 ZIP_NAME = os.environ.get("ZIP_NAME", "cloud-account-management-terraform-package.zip")
 
-v1_api_key=os.getenv("V1_API_KEY")
-subscription_id=os.getenv("SUB_ID")
-subscription_name=os.getenv("CLOUD_ACCOUNT_NAME")
-swp_instance_id=os.getenv("SWP_INSTANCE_ID")
-avtd_regions=os.getenv("AVTD_REGIONS")
-dspm_regions=os.getenv("DSPM_REGIONS")
-rtm_enable=os.getenv("RTM_ENABLE")
-fs_enable=os.getenv("FS_ENABLE")
-fss_region=os.getenv("FSS_REGION")
-cloud_xdr_enable=os.getenv("CLOUD_XDR_ENABLE")
-main_region=os.getenv("MAIN_REGION")
+v1_api_key        = os.getenv("V1_API_KEY")
+subscription_id   = os.getenv("SUB_ID")
+subscription_name = os.getenv("CLOUD_ACCOUNT_NAME")
+swp_instance_id   = os.getenv("SWP_INSTANCE_ID")
+rtm_enable        = os.getenv("RTM_ENABLE", "").strip().lower() == "true"
+fs_enable         = os.getenv("FS_ENABLE", "").strip().lower() == "true"
+cloud_xdr_enable  = False
+main_region       = os.getenv("MAIN_REGION_RESOLVED")
 
-payload = {} # Initialize payload as an empty dictionary
+
+def parse_regions(regions_env: str) -> list:
+    """
+    Normaliza el valor de una variable de entorno de regiones a una lista limpia.
+    Maneja los siguientes formatos:
+      - '["brazilsouth","eastus"]'  → JSON array string
+      - 'brazilsouth,eastus'        → CSV plain
+      - 'brazilsouth'               → single value
+      - '[]' o '' o None            → lista vacía
+    """
+    if not regions_env or regions_env.strip() in ("[]", ""):
+        return []
+
+    stripped = regions_env.strip()
+
+    if stripped.startswith("["):
+        try:
+            parsed = json.loads(stripped)
+            return [r.strip() for r in parsed if isinstance(r, str) and r.strip()]
+        except json.JSONDecodeError:
+            pass
+
+    # Fallback: CSV, eliminando corchetes y comillas residuales
+    cleaned = re.sub(r'[\[\]"]', '', stripped)
+    return [r.strip() for r in cleaned.split(",") if r.strip()]
+
+
+# Parsear regiones al inicio, ya normalizadas
+avtd_regions = parse_regions(os.getenv("AVTD_REGIONS", ""))
+dspm_regions = parse_regions(os.getenv("DSPM_REGIONS", ""))
+fss_regions  = parse_regions(os.getenv("FSS_REGIONS", ""))
 
 headers = {
-  'Content-Type': 'application/json',
-  'Accept': 'application/json',
-  'Authorization': f'Bearer {v1_api_key}'
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'Authorization': f'Bearer {v1_api_key}'
 }
 
-if main_region is None or main_region == "":
+if not main_region:
     main_region = "eastus"
 
 print("Main region is set to: ", main_region)
 print("AVTD regions: ", avtd_regions)
 print("DSPM regions: ", dspm_regions)
 print("FS Enable: ", fs_enable)
-print("FS Region: ", fss_region)
+print("FS Enable type: ", type(fs_enable))
+print("FS Region: ", fss_regions)
 print("RTM Enable: ", rtm_enable)
+print("XDR Enable: ", cloud_xdr_enable)
 
 
 def request_template_url():
     print("Requesting template URL with the following parameters:")
     print(f"Subscription Name: {subscription_name}")
     print(f"Subscription ID: {subscription_id}")
+
     payload = {
-        "azureSubscriptionName": f"{subscription_name}",
+        "azureSubscriptionName": subscription_name,
         "azureSubscriptionDescription": "",
-        "subscriptionId": f"{subscription_id}",
+        "subscriptionId": subscription_id,
         "connectedSecurityServices": [
             {
-            "name": "workload",
-            "instanceIds": [
-                f"{swp_instance_id}"
-            ]
+                "name": "workload",
+                "instanceIds": [swp_instance_id]
             }
         ],
         "features": [],
@@ -63,48 +92,43 @@ def request_template_url():
         "isCAMCloudASRMEnabled": True
     }
 
-    if avtd_regions != "[]":
-        print("avtd")
-        featureConfig = {
+    if avtd_regions:
+        payload["features"].append({
             "id": "cloud-sentry",
-            "regions": avtd_regions.split(",")
-        }
-        payload["features"].append(featureConfig)
-    
-    if dspm_regions != "[]":
-        print("dspm")
-        featureConfig = {
-            "id": "data-security-posture-management",
-            "regions": dspm_regions.split(",")
-        }
-        payload["features"].append(featureConfig)
-    if(rtm_enable == True):
-      print("rtm")
-      featureConfig = {
-        "id": "real-time-posture-monitoring"
-      }
-      payload["features"].append(featureConfig)
-    if(fs_enable == True):
-      print("fs")
-      featureConfig = {
-            "id": "file-storage-security",
-            "regions": [main_region]
-      }
-      payload["features"].append(featureConfig)
-    if(cloud_xdr_enable == True):
-      print("rtm")
-      featureConfig = {
-        "id": "azure-activity-log"
-      }
-      payload["features"].append(featureConfig)
-    
-    print("Payload to be sent in the request: ", payload)
+            "regions": avtd_regions
+        })
 
-    response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
-    print("Response status code: ", response.text)
+    if dspm_regions:
+        payload["features"].append({
+            "id": "data-security-posture-management",
+            "regions": dspm_regions
+        })
+
+    if rtm_enable:
+        payload["features"].append({
+            "id": "real-time-posture-monitoring"
+        })
+
+    if fs_enable and fss_regions:
+        payload["features"].append({
+            "id": "file-storage-security",
+            "regions": fss_regions
+        })
+
+    #if cloud_xdr_enable:
+    #    payload["features"].append({
+    #        "id": "azure-activity-log"
+    #    })
+
+    print("Payload to be sent in the request: ", json.dumps(payload, indent=2))
+
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    print("Response status code: ", response.status_code)
+    print("Response body: ", response.text)
 
     response_json = response.json()
     return response_json['templateUrl']
+
 
 def download_file(url: str, destination: str) -> None:
     with requests.get(url, stream=True, timeout=300) as response:
@@ -114,10 +138,12 @@ def download_file(url: str, destination: str) -> None:
                 if chunk:
                     f.write(chunk)
 
+
 def unzip_file(zip_path: str, extract_to: str) -> None:
     os.makedirs(extract_to, exist_ok=True)
     with zipfile.ZipFile(zip_path, "r") as zip_ref:
         zip_ref.extractall(extract_to)
+
 
 def main() -> int:
     try:
