@@ -18,7 +18,7 @@ subscription_name = os.getenv("CLOUD_ACCOUNT_NAME")
 swp_instance_id   = os.getenv("SWP_INSTANCE_ID")
 rtm_enable        = bool(os.getenv("RTM_ENABLE"))
 fs_enable         = bool(os.getenv("FS_ENABLE"))
-fss_region        = os.getenv("FSS_REGION")
+fss_regions        = os.getenv("FSS_REGIONS")
 cloud_xdr_enable  = False
 main_region       = os.getenv("MAIN_REGION_RESOLVED")
 
@@ -67,7 +67,7 @@ print("AVTD regions: ", avtd_regions)
 print("DSPM regions: ", dspm_regions)
 print("FS Enable: ", fs_enable)
 print("FS Enable type: ", type(fs_enable))
-print("FS Region: ", fss_region)
+print("FS Region: ", fss_regions)
 print("RTM Enable: ", rtm_enable)
 print("XDR Enable: ", cloud_xdr_enable)
 
@@ -112,7 +112,7 @@ def request_template_url():
     if fs_enable:
         payload["features"].append({
             "id": "file-storage-security",
-            "regions": [fss_region]
+            "regions": [fss_regions]
         })
 
     #if cloud_xdr_enable:
