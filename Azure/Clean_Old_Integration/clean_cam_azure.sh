@@ -17,6 +17,7 @@ set -euo pipefail
 #   DRY_RUN=0 ALL_SUBSCRIPTIONS=1 ./azure_cleanup_v1_trendmicro.sh
 #   DRY_RUN=0 ALL_SUBSCRIPTIONS=1 ./azure_cleanup_v1_trendmicro.sh
 #   DRY_RUN=0 SUBSCRIPTION_ID="xxxx-...." ./azure_cleanup_v1_trendmicro.sh
+#   DRY_RUN=1 SUBSCRIPTION_ID="xxxx-...." ./azure_cleanup_v1_trendmicro.sh   # dry-run scoped to one subscription
 ############################################
 
 # ===== Config =====
@@ -102,6 +103,14 @@ list_matching_custom_role_ids() {
 
 list_matching_resource_groups() {
   az group list --query "[?starts_with(name,'$PREFIX_1') || starts_with(name,'$PREFIX_2') || starts_with(name,'$PREFIX_3')].name" -o tsv
+}
+
+list_tagged_assets() {
+  # Verification only: resources tagged TrendMicroProduct or trend-micro-product,
+  # regardless of name prefix. Not included in deletion.
+  az resource list \
+    --query "[?tags.TrendMicroProduct != null || tags.\"trend-micro-product\" != null].{name:name, type:type, resourceGroup:resourceGroup}" \
+    -o tsv
 }
 
 delete_role_assignments_for_roles() {
@@ -236,11 +245,21 @@ for sub in "${subs[@]}"; do
   matching_app_ids="$(list_matching_app_ids || true)"
   matching_role_ids="$(list_matching_custom_role_ids || true)"
   matching_rgs="$(list_matching_resource_groups || true)"
+  tagged_assets="$(list_tagged_assets || true)"
 
   log "Found Service Principals: $(echo "$matching_sp_ids" | sed '/^$/d' | wc -l | tr -d ' ')"
   log "Found App Registrations:  $(echo "$matching_app_ids" | sed '/^$/d' | wc -l | tr -d ' ')"
   log "Found Custom Roles:       $(echo "$matching_role_ids" | sed '/^$/d' | wc -l | tr -d ' ')"
   log "Found Resource Groups:    $(echo "$matching_rgs" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+  # Verification only (not deleted): assets tagged TrendMicroProduct / trend-micro-product
+  tagged_count="$(echo "$tagged_assets" | sed '/^$/d' | wc -l | tr -d ' ')"
+  log "Tagged assets (TrendMicroProduct/trend-micro-product): $tagged_count"
+  if [[ "$tagged_count" -gt 0 ]]; then
+    echo "$tagged_assets" | while IFS=$'\t' read -r a_name a_type a_rg; do
+      log "  [TAGGED] $a_name ($a_type) in $a_rg"
+    done
+  fi
 
   # 2) Delete role assignments first
   delete_role_assignments_for_roles
