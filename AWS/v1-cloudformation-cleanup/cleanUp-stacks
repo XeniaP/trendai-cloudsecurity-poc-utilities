@@ -1,0 +1,223 @@
+#!/usr/bin/env python3
+"""
+force_delete_failed_stacks.py — Force-delete CloudFormation stacks in DELETE_FAILED state.
+
+Targets stacks tagged with TrendMicroProduct (any value) across all regions,
+using AWS Organizations to iterate over member accounts from the master account.
+
+Usage:
+    python force_delete_failed_stacks.py [--dry-run] [--region REGION] [--account ACCOUNT_ID]
+
+Options:
+    --dry-run           List stacks that would be deleted without actually deleting them.
+    --region REGION     Target a specific region (default: all enabled regions).
+    --account ACCOUNT_ID  Target a specific account ID (default: all org accounts).
+    --tag-value VALUE   Filter by specific TrendMicroProduct tag value (default: any).
+    --role-name NAME    IAM role to assume in member accounts (default: OrganizationAccountAccessRole).
+
+Requirements:
+    - boto3 installed: pip install boto3
+    - Master account credentials active (via AWS_PROFILE, env vars, or instance role).
+    - The assumed role must have: cloudformation:ListStacks, cloudformation:DescribeStacks,
+      cloudformation:DeleteStack, cloudformation:ListStackResources.
+"""
+
+import argparse
+import sys
+import time
+import boto3
+from botocore.exceptions import ClientError
+
+TAG_KEY = "TrendMicroProduct"
+DEFAULT_ROLE = "OrganizationAccountAccessRole"
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Force-delete DELETE_FAILED stacks tagged with TrendMicroProduct")
+    parser.add_argument("--dry-run", action="store_true", help="List stacks without deleting")
+    parser.add_argument("--region", help="Target a specific AWS region")
+    parser.add_argument("--account", help="Target a specific AWS account ID")
+    parser.add_argument("--tag-value", help="Filter by TrendMicroProduct tag value (e.g. 'cam')")
+    parser.add_argument("--role-name", default=DEFAULT_ROLE, help=f"IAM role to assume in member accounts (default: {DEFAULT_ROLE})")
+    return parser.parse_args()
+
+
+def get_org_accounts(org_client, target_account=None):
+    if target_account:
+        return [{"Id": target_account}]
+    accounts = []
+    paginator = org_client.get_paginator("list_accounts")
+    for page in paginator.paginate():
+        for acct in page["Accounts"]:
+            if acct["Status"] == "ACTIVE":
+                accounts.append(acct)
+    return accounts
+
+
+def get_enabled_regions(ec2_client, target_region=None):
+    if target_region:
+        return [target_region]
+    resp = ec2_client.describe_regions(Filters=[{"Name": "opt-in-status", "Values": ["opt-in-not-required", "opted-in"]}])
+    return [r["RegionName"] for r in resp["Regions"]]
+
+
+def assume_role(sts_client, account_id, role_name):
+    role_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+    try:
+        creds = sts_client.assume_role(RoleArn=role_arn, RoleSessionName="ForceDeleteFailedStacks")["Credentials"]
+        return {
+            "aws_access_key_id": creds["AccessKeyId"],
+            "aws_secret_access_key": creds["SecretAccessKey"],
+            "aws_session_token": creds["SessionToken"],
+        }
+    except ClientError as e:
+        print(f"  [WARN] Cannot assume role in {account_id}: {e.response['Error']['Message']}")
+        return None
+
+
+def get_stack_tags(cf_client, stack_name):
+    try:
+        resp = cf_client.describe_stacks(StackName=stack_name)
+        stacks = resp.get("Stacks", [])
+        if stacks:
+            return {t["Key"]: t["Value"] for t in stacks[0].get("Tags", [])}
+    except ClientError:
+        pass
+    return {}
+
+
+def get_retain_resources(cf_client, stack_name):
+    """Return resource logical IDs that must be retained on force-delete."""
+    retain = []
+    try:
+        paginator = cf_client.get_paginator("list_stack_resources")
+        for page in paginator.paginate(StackName=stack_name):
+            for r in page["StackResourceSummaries"]:
+                if r["ResourceStatus"] in ("DELETE_FAILED", "DELETE_SKIPPED"):
+                    retain.append(r["LogicalResourceId"])
+    except ClientError as e:
+        print(f"    [WARN] Could not list resources for {stack_name}: {e.response['Error']['Message']}")
+    return retain
+
+
+def find_delete_failed_stacks(cf_client, tag_value_filter=None):
+    stacks = []
+    paginator = cf_client.get_paginator("list_stacks")
+    for page in paginator.paginate(StackStatusFilter=["DELETE_FAILED"]):
+        for s in page["StackSummaries"]:
+            tags = get_stack_tags(cf_client, s["StackName"])
+            if TAG_KEY not in tags:
+                continue
+            if tag_value_filter and tags[TAG_KEY] != tag_value_filter:
+                continue
+            stacks.append({
+                "StackName": s["StackName"],
+                "StackId": s["StackId"],
+                "Tags": tags,
+            })
+    return stacks
+
+
+def force_delete_stack(cf_client, stack_name, dry_run=False):
+    retain = get_retain_resources(cf_client, stack_name)
+    if dry_run:
+        retain_msg = f", retain={retain}" if retain else ""
+        print(f"    [DRY-RUN] Would delete: {stack_name}{retain_msg}")
+        return True
+
+    kwargs = {"StackName": stack_name}
+    if retain:
+        kwargs["RetainResources"] = retain
+        print(f"    Retaining resources: {retain}")
+
+    try:
+        cf_client.delete_stack(**kwargs)
+        print(f"    [OK] Delete initiated: {stack_name}")
+        return True
+    except ClientError as e:
+        print(f"    [ERROR] {stack_name}: {e.response['Error']['Message']}")
+        return False
+
+
+def process_account_region(credentials, account_id, region, args):
+    cf_client = boto3.client("cloudformation", region_name=region, **credentials)
+    try:
+        stacks = find_delete_failed_stacks(cf_client, tag_value_filter=args.tag_value)
+    except ClientError as e:
+        print(f"  [WARN] {region}: {e.response['Error']['Message']}")
+        return 0, 0
+
+    if not stacks:
+        return 0, 0
+
+    print(f"  {region}: found {len(stacks)} DELETE_FAILED stack(s) with tag '{TAG_KEY}'")
+    ok = fail = 0
+    for stack in stacks:
+        tag_val = stack["Tags"].get(TAG_KEY, "?")
+        print(f"    Stack: {stack['StackName']} [{TAG_KEY}={tag_val}]")
+        if force_delete_stack(cf_client, stack["StackName"], dry_run=args.dry_run):
+            ok += 1
+        else:
+            fail += 1
+    return ok, fail
+
+
+def main():
+    args = parse_args()
+    session = boto3.session.Session()
+    master_sts = session.client("sts")
+    master_identity = master_sts.get_caller_identity()
+    master_account = master_identity["Account"]
+
+    print(f"Master account : {master_account}")
+    print(f"Dry-run        : {args.dry_run}")
+    print(f"Tag filter     : {TAG_KEY}={args.tag_value or '*'}")
+    print(f"Assume role    : {args.role_name}")
+    print()
+
+    org_client = session.client("organizations")
+    ec2_client = session.client("ec2", region_name="us-east-1")
+
+    accounts = get_org_accounts(org_client, target_account=args.account)
+    regions = get_enabled_regions(ec2_client, target_region=args.region)
+
+    print(f"Accounts to scan : {len(accounts)}")
+    print(f"Regions to scan  : {len(regions)}")
+    print()
+
+    total_ok = total_fail = 0
+
+    for acct in accounts:
+        account_id = acct["Id"]
+        account_name = acct.get("Name", account_id)
+        print(f"Account: {account_id} ({account_name})")
+
+        if account_id == master_account:
+            credentials = {}
+        else:
+            credentials = assume_role(master_sts, account_id, args.role_name)
+            if credentials is None:
+                continue
+
+        for region in regions:
+            ok, fail = process_account_region(credentials, account_id, region, args)
+            total_ok += ok
+            total_fail += fail
+
+        # Small pause to avoid API throttling between accounts
+        time.sleep(0.5)
+
+    print()
+    print("=" * 50)
+    print(f"Done. Stacks processed: {total_ok + total_fail}")
+    print(f"  Initiated/skipped OK : {total_ok}")
+    print(f"  Errors               : {total_fail}")
+    if args.dry_run:
+        print("  (Dry-run — no stacks were deleted)")
+    if total_fail:
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
+ 
